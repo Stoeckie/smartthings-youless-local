@@ -1,0 +1,7 @@
+name: "YouLess (local)"
+packageKey: "youless-local"
+description: "Power, energy used and returned, and gas from a YouLess LS110 / LS120 energy monitor over the local LAN"
+vendorSupportInformation: "https://github.com/Stoeckie"
+permissions:
+  lan: {}
+  discovery: {}

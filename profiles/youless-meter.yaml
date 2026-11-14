@@ -1,0 +1,53 @@
+name: youless-meter
+components:
+  - id: main
+    capabilities:
+      - id: powerMeter
+        version: 1
+      - id: energyMeter
+        version: 1
+      - id: silvervalley08660.connectionStatus
+        version: 1
+      - id: silvervalley08660.connectionLog
+        version: 1
+      - id: refresh
+        version: 1
+    categories:
+      - name: CurbPowerMeter
+  - id: export
+    label: Returned to grid
+    capabilities:
+      - id: energyMeter
+        version: 1
+  - id: gas
+    label: Gas
+    capabilities:
+      - id: gasMeter
+        version: 1
+preferences:
+  - name: ipAddress
+    title: YouLess IP address
+    description: Leave on "auto" (the driver searches the hub's network). Set the IP if that fails; give the YouLess a fixed IP in your router.
+    required: false
+    preferenceType: string
+    definition:
+      stringType: text
+      default: "auto"
+  - name: pollInterval
+    title: Read every (seconds)
+    description: How often the driver reads the YouLess. Power goes to SmartThings at most once a minute (every 15 s for a jump of 500 W or more), the totals every 5 minutes.
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 5
+      maximum: 300
+      default: 10
+  - name: offlineAfter
+    title: Offline after (minutes)
+    description: "Connection only turns Offline after this many minutes without contact, so a short network outage gives no notification."
+    required: false
+    preferenceType: integer
+    definition:
+      minimum: 1
+      maximum: 120
+      default: 5
