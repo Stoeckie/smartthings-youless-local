@@ -71,7 +71,7 @@ local api = require "youless_api"
 local model = require "youless_model"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-14c"
+local BUILD = "2026-11-14d"
 local state = {} -- device.id -> { timer, busy, host, has_e, err, last_ok }
 
 local function clean(s) return (tostring(s or ""):gsub("%s", "")) end
@@ -81,20 +81,21 @@ local function probe(host, timeout)
   return model.is_youless(d) and d or nil
 end
 
--- search the hub's /24 for a YouLess (it answers /d with its model); 32 addresses at a time, 1.5 s each
+-- search the hub's /24 for a YouLess (it answers /d with its model); 16 addresses at a time, 3 s each
+-- (a YouLess answers slowly while many connections arrive at once)
 local function scan(driver)
   local hub = driver.environment_info and driver.environment_info.hub_ipv4
   local net = hub and hub:match("^(%d+%.%d+%.%d+)%.%d+$")
   if not net then return nil end
   local found
-  for start = 1, 254, 32 do
+  for start = 1, 254, 16 do
     local pending = 0
     local tx, rx = cosock.channel.new()   -- cosock returns a sender and a receiver
-    for i = start, math.min(254, start + 31) do
+    for i = start, math.min(254, start + 15) do
       pending = pending + 1
       cosock.spawn(function()
         local ip = net .. "." .. i
-        local ok, d = pcall(probe, ip, 1.5)
+        local ok, d = pcall(probe, ip, 3)
         tx:send(ok and d and ip or false)
       end, "youless-scan")
     end
@@ -110,7 +111,7 @@ end
 local function host_of(dev)
   local p = clean((dev.preferences or {}).ipAddress)
   if p ~= "" and p ~= "auto" then return p end
-  return dev:get_field("ip")
+  return dev:get_field("ip") or (dev.driver and dev.driver.datastore and dev.driver.datastore.found_ip)
 end
 
 local function emit(dev, r)
@@ -225,6 +226,7 @@ local function discovery(driver, opts, should_continue, only_if_found)
   for _, d in ipairs(driver:get_devices()) do known[d.device_network_id or ""] = true end
   local ip = scan(driver)
   local d = ip and probe(ip)
+  if ip then pcall(function() driver.datastore.found_ip = ip end) end
   local mac = d and tostring(d.mac or ""):gsub(":", ""):lower() or ""
   local dni = "youless-" .. (mac ~= "" and mac or "1")
   if known[dni] then return end
