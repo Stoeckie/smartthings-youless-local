@@ -13,10 +13,23 @@ function M.get(host, path, timeout)
   if not ok then sock:close(); return nil, "connect: " .. tostring(cerr) end
   local sent, serr = sock:send("GET " .. path .. " HTTP/1.0\r\nHost: " .. host .. "\r\nConnection: close\r\n\r\n")
   if not sent then sock:close(); return nil, "send: " .. tostring(serr) end
-  local data, rerr, partial = sock:receive("*a")
+  -- read in blocks until the YouLess closes the connection. cosock's receive("*a") raises
+  -- "socket receive returned nil data" when the peer closes, so that pattern is not used.
+  local parts, rerr = {}, nil
+  while true do
+    local ok, chunk, err, partial = pcall(sock.receive, sock, 512)
+    if not ok then rerr = chunk; break end
+    if chunk then
+      parts[#parts + 1] = chunk
+    else
+      if partial and partial ~= "" then parts[#parts + 1] = partial end
+      rerr = err
+      break
+    end
+  end
   sock:close()
-  data = data or partial
-  if not data or data == "" then return nil, "receive: " .. tostring(rerr) end
+  local data = table.concat(parts)
+  if data == "" then return nil, "receive: " .. tostring(rerr) end
   local status = tonumber(data:match("^HTTP/%d%.?%d?%s+(%d+)"))
   local body = data:match("\r\n\r\n(.*)$") or ""
   return status, body

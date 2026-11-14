@@ -71,7 +71,7 @@ local api = require "youless_api"
 local model = require "youless_model"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-14e"
+local BUILD = "2026-11-14f"
 local state = {} -- device.id -> { timer, busy, host, has_e, err, last_ok }
 
 local function clean(s) return (tostring(s or ""):gsub("%s", "")) end
