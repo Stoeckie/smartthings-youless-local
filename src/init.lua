@@ -244,7 +244,8 @@ local driver = Driver("youless-local", {
 })
 
 -- Auto-add: when the driver starts without any device and finds a YouLess on the LAN, it creates the device itself,
--- so no "Scan nearby" in the app is needed (that is not possible from the Windows app).
+-- Note: the hub only starts a driver that has devices or is scanning, so for a new install "Scan nearby" is still needed;
+-- this helps when the driver restarts (update, hub reboot) after its device was removed.
 driver:call_with_delay(20, function()
   if #driver:get_devices() == 0 then discovery(driver, {}, function() return true end, true) end
 end, "youless auto-add")

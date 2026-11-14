@@ -15,7 +15,7 @@ With a **P1 smart meter** (LS120) you get all four (`/e`). With the **optical se
 
 1. Give the YouLess a fixed IP in your router (DHCP reservation).
 2. Install the driver from the channel **Stoeckie Edge Drivers** and pick your hub.
-3. The device "YouLess" is added automatically: about 20 seconds after the driver starts without any device, it searches the hub's network (/24) for a YouLess and creates the device when it finds one. **Scan nearby** in the SmartThings app works too.
+3. In the SmartThings app (phone): Add device, **Scan nearby**. The driver searches the hub's network (/24) for a YouLess and creates the device "YouLess". The hub only starts an Edge driver that has devices or is scanning, so this step is needed once.
 4. Not found (other subnet)? Open the device settings and set **YouLess IP address**.
 
 ## Settings
