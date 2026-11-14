@@ -71,7 +71,7 @@ local api = require "youless_api"
 local model = require "youless_model"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-14d"
+local BUILD = "2026-11-14e"
 local state = {} -- device.id -> { timer, busy, host, has_e, err, last_ok }
 
 local function clean(s) return (tostring(s or ""):gsub("%s", "")) end
@@ -143,6 +143,7 @@ local function poll_once(driver, dev, st)
     if not host then
       st.err = "YouLess not found (set its IP in the device settings)"
       log.warn("[youless] " .. st.err)
+      pcall(function() dev:emit_event(drop_cap.lastDrop(st.err)) end)
       set_conn(dev, false, st.err); dev:offline()
       return
     end
@@ -165,6 +166,10 @@ local function poll_once(driver, dev, st)
   if not r then
     st.err = tostring(err or "no readings")
     log.warn("[youless] " .. host .. ": " .. st.err)
+    if not st.last_ok then
+      -- never connected yet: show the reason in the app (Connection log) so setup problems are visible
+      pcall(function() dev:emit_event(drop_cap.lastDrop(("Not reachable: " .. host .. ": " .. st.err):sub(1, 200))) end)
+    end
     set_conn(dev, false, st.err); dev:offline()
     -- an automatically found address can change: search again after a few failures
     st.fails = (st.fails or 0) + 1
