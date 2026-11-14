@@ -17,7 +17,8 @@ package.loaded["cosock"] = { spawn = function(f) f() end,
 package.loaded["cosock.socket"] = {}
 package.loaded["st.driver"] = function(name, tmpl) DRIVER = tmpl; DRVOBJ = { run = function() end,
   environment_info = { hub_ipv4 = "192.168.2.8" }, get_devices = function() return {} end,
-  try_create_device = function(_, d) CREATED = d end }; return DRVOBJ end
+  try_create_device = function(_, d) CREATED = d end,
+  call_with_delay = function(_, s, f) AUTOADD = f end }; return DRVOBJ end
 ANSWERS = {}
 package.loaded["youless_api"] = { json = function(host, path)
   local a = ANSWERS[host .. path]; if a then return a end; return nil, "connect: timeout" end }
@@ -85,3 +86,19 @@ def test_not_found_goes_offline():
     lua = setup()
     lua.execute(b'DRIVER.lifecycle_handlers.init(DRVOBJ, DEV); TICK()')
     assert lua.eval(b'DEV.on') is False
+
+
+def test_auto_add_when_found():
+    lua = setup()
+    lua.execute(b'''
+      ANSWERS["192.168.2.21/d"] = { model = "LS120", mac = "72:b8:ad:14:39:24" }
+      AUTOADD()
+    ''')
+    assert lua.eval(b'CREATED.device_network_id') == b"youless-72b8ad143924"
+    assert lua.eval(b'CREATED.profile') == b"youless-meter"
+
+
+def test_auto_add_skips_when_not_found():
+    lua = setup()
+    lua.execute(b'AUTOADD()')
+    assert lua.eval(b'CREATED') is None

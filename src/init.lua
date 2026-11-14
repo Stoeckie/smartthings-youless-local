@@ -71,7 +71,7 @@ local api = require "youless_api"
 local model = require "youless_model"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-14a"
+local BUILD = "2026-11-14b"
 local state = {} -- device.id -> { timer, busy, host, has_e, err, last_ok }
 
 local function clean(s) return (tostring(s or ""):gsub("%s", "")) end
@@ -220,7 +220,7 @@ local function device_removed(driver, dev)
   state[dev.id] = nil
 end
 
-local function discovery(driver, opts, should_continue)
+local function discovery(driver, opts, should_continue, only_if_found)
   local known = {}
   for _, d in ipairs(driver:get_devices()) do known[d.device_network_id or ""] = true end
   local ip = scan(driver)
@@ -228,6 +228,7 @@ local function discovery(driver, opts, should_continue)
   local mac = d and tostring(d.mac or ""):gsub(":", ""):lower() or ""
   local dni = "youless-" .. (mac ~= "" and mac or "1")
   if known[dni] then return end
+  if only_if_found and not ip then log.info("[youless] auto-add: no YouLess found on the LAN"); return end
   log.info("[youless] discovery: " .. tostring(ip or "not found, device created anyway (set its IP)"))
   driver:try_create_device({ type = "LAN", device_network_id = dni, label = "YouLess",
     profile = "youless-meter", manufacturer = "YouLess", model = d and d.model or "LS120",
@@ -241,6 +242,12 @@ local driver = Driver("youless-local", {
     [capabilities.refresh.ID] = { [capabilities.refresh.commands.refresh.NAME] = handle_refresh },
   },
 })
+
+-- Auto-add: when the driver starts without any device and finds a YouLess on the LAN, it creates the device itself,
+-- so no "Scan nearby" in the app is needed (that is not possible from the Windows app).
+driver:call_with_delay(20, function()
+  if #driver:get_devices() == 0 then discovery(driver, {}, function() return true end, true) end
+end, "youless auto-add")
 
 log.info("[youless] YouLess (local) driver starting, build " .. BUILD)
 driver:run()
