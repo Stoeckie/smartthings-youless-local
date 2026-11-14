@@ -71,7 +71,7 @@ local api = require "youless_api"
 local model = require "youless_model"
 local emitq = require "emitq"  -- only changed values go to the hub (see emitq.lua)
 
-local BUILD = "2026-11-14b"
+local BUILD = "2026-11-14c"
 local state = {} -- device.id -> { timer, busy, host, has_e, err, last_ok }
 
 local function clean(s) return (tostring(s or ""):gsub("%s", "")) end
@@ -89,17 +89,17 @@ local function scan(driver)
   local found
   for start = 1, 254, 32 do
     local pending = 0
-    local done = cosock.channel.new()
+    local tx, rx = cosock.channel.new()   -- cosock returns a sender and a receiver
     for i = start, math.min(254, start + 31) do
       pending = pending + 1
       cosock.spawn(function()
         local ip = net .. "." .. i
         local ok, d = pcall(probe, ip, 1.5)
-        done:send(ok and d and ip or false)
+        tx:send(ok and d and ip or false)
       end, "youless-scan")
     end
     for _ = 1, pending do
-      local ip = done:receive()
+      local ip = rx:receive()
       if ip and not found then found = ip end
     end
     if found then break end

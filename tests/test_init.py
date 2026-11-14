@@ -12,8 +12,9 @@ package.loaded["st.capabilities"] = setmetatable({ refresh = { ID = "refresh", c
   { __index = function(t, k) local v = capmock(k); rawset(t, k, v); return v end })
 package.loaded["log"] = { info = function() end, warn = function(m) LASTWARN = m end, error = function(m) error(m) end, debug = function() end }
 package.loaded["cosock"] = { spawn = function(f) f() end,
-  channel = { new = function() local q = {}; return { send = function(_, v) q[#q + 1] = v end,
-    receive = function() return table.remove(q, 1) end } end } }
+  channel = { new = function() local q = {}
+    -- like real cosock: a sender and a receiver, each with only its own method
+    return { send = function(_, v) q[#q + 1] = v end }, { receive = function() return table.remove(q, 1) end } end } }
 package.loaded["cosock.socket"] = {}
 package.loaded["st.driver"] = function(name, tmpl) DRIVER = tmpl; DRVOBJ = { run = function() end,
   environment_info = { hub_ipv4 = "192.168.2.8" }, get_devices = function() return {} end,
